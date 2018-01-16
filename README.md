@@ -1,4 +1,4 @@
-# pyquery
+# pyquering
 
 It is useful for creating queries and to convert it to any syntax
 
@@ -7,7 +7,7 @@ It is useful for creating queries and to convert it to any syntax
 If you want 'SELECT ... FROM ... WHERE `foo = "BAR" OR bar = "FOO"`', do this:
 
 ```
-from pyquery.query import q
+from pyquering.query import q
 
 q(foo="BAR") | q(bar="FOO")
 ```
@@ -15,7 +15,7 @@ q(foo="BAR") | q(bar="FOO")
 Let's do one more complicated. 'SELECT ... FROM ... WHERE `(shirt = "orange" AND pants = "red") OR ((shirt = "black" OR pants = "dark gray") AND age >= 18)`':
 
 ```
-from pyquery.query import q
+from pyquering.query import q
 
 q(shirt="orange", pants="red") | q(q(q(shirt="black") | q(pants="dark gray")) & q(age__gte=18))
 ```
@@ -27,7 +27,7 @@ q(shirt="orange", pants="red") | q(q(q(shirt="black") | q(pants="dark gray")) & 
 **To SQL:**
 
 ```
-from pyquery.query import q, Query
+from pyquering.query import q, Query
 from utils.helpers.query_parsers import SQLParser
 
 obj = q(foo="BAR") | q(bar="FOO")
@@ -44,7 +44,7 @@ SELECT * FROM table WHERE (`for`="BAR") OR (`bar`="FOO")
 **To JSON:**
 
 ```
-from pyquery.query import q, Query
+from pyquering.query import q, Query
 from utils.helpers.query_parsers import JSONParser
 
 obj = q(foo="BAR") | q(bar="FOO")
@@ -63,7 +63,7 @@ Result:
 **From JSON:**
 
 ```
-from pyquery.query import q, Query
+from pyquering.query import q, Query
 from utils.helpers.query_parsers import JSONParser
 
 obj = {'filters': {'OR': [{'foo__eq': 'BAR'}, {'bar__eq': 'FOO'}]}}
@@ -74,7 +74,7 @@ Query(obj).reverse(JSONParser)
 **From SQL:**
 
 ```
-from pyquery.query import q, Query
+from pyquering.query import q, Query
 from utils.helpers.query_parsers import SQLParser
 
 Query(obj).reverse(SQLParser)
