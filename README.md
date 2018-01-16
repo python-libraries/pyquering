@@ -1,5 +1,6 @@
 # pyquery
-it is useful for creating queries and to convert it to any syntax
+
+It is useful for creating queries and to convert it to any syntax
 
 # Creating queries
 
@@ -11,7 +12,7 @@ from pyquery.query import q
 q(foo="BAR") | q(bar="FOO")
 ```
 
-Let's do one most complicated. 'SELECT ... FROM ... WHERE `(shirt = "orange" AND pants = "red") OR ((shirt = "black" OR pants = "dark gray") AND age >= 18)`':
+Let's do one more complicated. 'SELECT ... FROM ... WHERE `(shirt = "orange" AND pants = "red") OR ((shirt = "black" OR pants = "dark gray") AND age >= 18)`':
 
 ```
 from pyquery.query import q
@@ -81,6 +82,6 @@ Query(obj).reverse(SQLParser)
 
 # About the class Query
 
-It has three attributes which are, `fields`, `table` and `filters`. You can initiliaze like this `Query(<string: table_name>, <list: fields>, <InstanceOf q: filters>)`, in any order will works, but you can specify all arguments like this `Query(table='Table Name', fields=['field1', 'field2'], filters=q)`.
+It has three attributes which are, `fields`, `table` and `filters`. You can initiliaze like this `Query(<string: table_name>, <list: fields>, <InstanceOf q: filters>)`, in any order will work, but you can specify all arguments like this `Query(table='Table Name', fields=['field1', 'field2'], filters=q)`.
 
 This class has only two method wich are `reverse` and `parse`, that were showed and examplified before.
