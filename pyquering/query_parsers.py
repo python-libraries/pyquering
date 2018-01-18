@@ -1,4 +1,5 @@
 from .query import q
+import re
 
 
 class QParser:
@@ -68,7 +69,19 @@ class QParser:
 class SQLParser(QParser):
 
 
-    def _value(value):
+    symbols = {
+        'eq': '`%s`=%s',
+        'in': '`%s` IN(%s)',
+        'gte': '`%s`>= %s',
+        'lte': '`%s`<= %s',
+        'isnull': {
+            'True': '`%s` IS NULL',
+            'False': '`%s` IS NOT NULL'
+        }
+    }
+
+
+    def _value(self, value):
         _value_type = type(value)
 
         if _value_type is not int and _value_type is not float:
@@ -89,24 +102,17 @@ class SQLParser(QParser):
 
 
     def _parser(self, cmp, field, values):
-        symbols = {
-            'eq': '`%s`=%s',
-            'in': '`%s` IN(%s)',
-            'gte': '`%s`>= %s',
-            'lte': '`%s`<= %s',
-            'isnull': {
-                'True': '`%s` IS NULL',
-                'False': '`%s` IS NOT NULL'
-            }
-        }
-
         if type(values) is list or type(values) is tuple:
-            values = ','.join([_value(value) for value in values])
+            values = ','.join([self._value(value) for value in values])
 
         if cmp == 'isnull':
-            return symbols[cmp][str(values)] % field
+            return self.symbols[cmp][str(values)] % field
         else:
-            return symbols[cmp] % (field, values)
+            return self.symbols[cmp] % (field, values)
+
+
+    def _parser_reverse(self, cmp, field, values):
+        return {'%s__%s' % (field, cmp): values}
 
 
     def _sql_where(self, sql):
@@ -116,10 +122,8 @@ class SQLParser(QParser):
     def _sql_factor(self, sql, pos):
         end = sql.find(')')
         start = sql[:end].rfind('(')
-
         factor = sql[start + 1:end]
         sql = sql[:start] + '$%s' % pos + sql[end + 1:]
-
         return [sql, factor]
 
 
@@ -143,23 +147,70 @@ class SQLParser(QParser):
                 return {'OR': factors.split('OR')}
 
         factors = [self._sql_split_operations(factor) for factor in factors]
-
         return factors
+
+
+    def _format_json_get_field_comparator_value(self, operation):
+        operation = operation.strip()
+
+        for comparator, pattern in self.symbols.items():
+
+            if type(pattern) is dict:
+                for value, pattern in pattern.items():
+                    value = bool(value)
+                    pattern = pattern.replace('`%s`', '`([\S]+)`')
+                    match = re.match(pattern, operation)
+
+                    if match:
+                        matched = match.group(0).strip()
+
+                        if matched == operation:
+                            field = match.group(1)
+                            return comparator, field, value
+
+            pattern = pattern.replace('`%s`', '`([\S]+)`').replace('%s', '([\S]+)')
+            match = re.match(pattern, operation)
+
+            if match:
+                matched = match.group(0).strip()
+
+                if matched == operation:
+                    field = match.group(1).strip()
+                    value = match.group(2).strip()
+                    return comparator, field, value
+
+
+    def _format_json_operation_format(self, operation):
+        comparator, field, value = self._format_json_get_field_comparator_value(operation)
+        return self._parser_reverse(comparator, field, value)
+
+
+    def _format_json_operation(self, operation, json):
+        dollar_pos = operation.find('$')
+
+        if dollar_pos >= 0:
+            dollar_val = int(operation[dollar_pos+1])
+            value = json[dollar_val]
+        else:
+            value = self._format_json_operation_format(operation)
+
+        return value
+
+
+    def _format_json(self, factor, json):
+        OR = factor.get('OR')
+        AND = factor.get('AND')
+        operation_list = AND if AND else OR
+        json = [self._format_json_operation(operation, json) for operation in operation_list]
+        json = {factor.__iter__().__next__(): json}
+        return json
 
 
     def _mount_sql_json(self, factors, factor=None):
-        if not factor:
-            fac = [self._mount_sql_json(factors, factor) for factor in factors]
-
-        if type(factor) is str:
-            for value in factors:
-                return factors[value[1:]]
-
-        if type(factor) is dict:
-            dict_key = factor.__iter__().__next__()
-            self._mount_sql_json(factors, factor['dict_key'])
-
-        return factors
+        json = []
+        for factor in factors:
+            json.append(self._format_json(factor, json))
+        return json[-1]
 
 
     def parse(self, table, fields, filters):
