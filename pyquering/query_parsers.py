@@ -84,6 +84,11 @@ class SQLParser(QParser):
     def _value(self, value):
         _value_type = type(value)
 
+        if _value_type is str:
+            if value.isdigit():
+                value = int(value)
+                _value_type = type(value)
+
         if _value_type is not int and _value_type is not float:
             value = '"%s"' % value
         else:
@@ -108,7 +113,7 @@ class SQLParser(QParser):
         if cmp == 'isnull':
             return self.symbols[cmp][str(values)] % field
         else:
-            return self.symbols[cmp] % (field, values)
+            return self.symbols[cmp] % (field, self._value(values))
 
 
     def _parser_reverse(self, cmp, field, values):
@@ -213,7 +218,19 @@ class SQLParser(QParser):
         return json[-1]
 
 
-    def parse(self, table, fields, filters):
+    def _column_delimiter(self, delimiter):
+        if not delimiter:
+            for cmp, symbol in self.symbols.items():
+                if type(symbol) is str:
+                    self.symbols[cmp] = symbol.replace('`%s`', '%s')
+                else:
+                    for value, isnull in symbol.items():
+                        self.symbols[cmp][value] = isnull.replace('`%s`', '%s')
+
+
+    def parse(self, table, fields, filters, limit, column_delimiter):
+        self._column_delimiter(column_delimiter)
+
         filters = self._parse_filters(filters)
 
         if not fields:
@@ -221,7 +238,10 @@ class SQLParser(QParser):
         else:
             fields = ','.join(['`%s`' % field for field in fields])
 
-        return 'SELECT %s FROM %s WHERE %s' % (fields, table, filters)
+        if limit:
+            return 'SELECT %s FROM %s WHERE %s LIMIT %s' % (fields, table, filters, limit)
+        else:
+            return 'SELECT %s FROM %s WHERE %s' % (fields, table, filters)
 
 
     def reverse(self, sql):
@@ -247,13 +267,15 @@ class JSONParser(QParser):
         return {'%s__%s' % (field, cmp): values}
 
 
-    def parse(self, table, fields, filters):
+    def parse(self, table, fields, filters, limit, column_delimiter):
         json = {}
 
         if table:
             json.update({'table': table})
         if fields:
             json.update({'fields': fields})
+        if limit:
+            json.update({'limit': limit})
 
         filters = self._parse_filters(filters)
 
