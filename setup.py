@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
 	name = 'pyquering',
 	packages = ['pyquering'], # this must be the same as the name above
-	version = '0.1.4',
+	version = '0.2.0',
 	description = 'A lib to easy quering and parse it to SQL language or JSON or whatever it is necessary',
 	author = 'Thiago Moraes Stefani',
 	author_email = 'thiagoms.br@gmail.com',
