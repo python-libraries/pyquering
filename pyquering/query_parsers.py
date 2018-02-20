@@ -120,6 +120,14 @@ class SQLParser(QParser):
         return {'%s__%s' % (field, cmp): values}
 
 
+    def _parse_orders(self, orders):
+        orders = ['%s DESC' % order[1:] if order[0] == '-' else '%s ASC' % order for order in orders]
+        if len(orders) == 1:
+            return orders[0]
+        else:
+            return ', '.join(orders)
+
+
     def _sql_where(self, sql):
         return sql.split('WHERE ')[1]
 
@@ -228,20 +236,32 @@ class SQLParser(QParser):
                         self.symbols[cmp][value] = isnull.replace('`%s`', '%s')
 
 
-    def parse(self, table, fields, filters, limit, column_delimiter):
+    def parse(self, table, fields, filters, limit, orders, column_delimiter):
         self._column_delimiter(column_delimiter)
 
-        filters = self._parse_filters(filters)
+        if filters:
+            filters = self._parse_filters(filters)
+
+        if orders:
+            orders = self._parse_orders(orders)
 
         if not fields:
             fields = '*'
         else:
             fields = ','.join(['`%s`' % field for field in fields])
 
+        sql = 'SELECT %s FROM %s' % (fields, table)
+
+        if filters:
+            sql += ' WHERE %s' % filters
+
+        if orders:
+            sql += ' ORDER BY %s' % orders
+
         if limit:
-            return 'SELECT %s FROM %s WHERE %s LIMIT %s' % (fields, table, filters, limit)
-        else:
-            return 'SELECT %s FROM %s WHERE %s' % (fields, table, filters)
+            sql += ' LIMIT %s' % limit
+
+        return sql
 
 
     def reverse(self, sql):
@@ -267,7 +287,7 @@ class JSONParser(QParser):
         return {'%s__%s' % (field, cmp): values}
 
 
-    def parse(self, table, fields, filters, limit, column_delimiter):
+    def parse(self, table, fields, filters, limit, orders, column_delimiter):
         json = {}
 
         if table:
@@ -276,6 +296,8 @@ class JSONParser(QParser):
             json.update({'fields': fields})
         if limit:
             json.update({'limit': limit})
+        if orders:
+            json.update({'orders': orders})
 
         filters = self._parse_filters(filters)
 

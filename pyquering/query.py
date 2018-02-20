@@ -42,30 +42,21 @@ class Query:
     table = None
     filters = None
     limit = None
+    orders = None
     column_delimiter = None
 
 
-    def __init__(self, *args, table=None, fields=None, filters=None, limit=None, column_delimiter=True):
+    def __init__(self, table=None, fields=None, filters=None, limit=None, orders=None, column_delimiter=True):
         self.table = table
         self.fields = fields
         self.filters = filters
         self.limit = limit
+        self.orders = orders
         self.column_delimiter = column_delimiter
-
-        if not self.filters and args:
-            for arg in args:
-                if isinstance(arg, q):
-                    self.filters = arg
-                if type(arg) is str:
-                    self.table = arg
-                if type(arg) is list:
-                    self.fields = arg
-                if type(arg) is int:
-                    self.limit = arg
 
 
     def parse(self, query_parser):
-        query = query_parser().parse(self.table, self.fields, self.filters, self.limit, self.column_delimiter)
+        query = query_parser().parse(self.table, self.fields, self.filters, self.limit, self.orders, self.column_delimiter)
 
         return query
 
