@@ -272,6 +272,37 @@ class SQLParser(QParser):
         return self._reverse(json)
 
 
+class SQLParserWrap(SQLParser):
+
+
+    table = None
+    fields = None
+    orders = None
+    limit = None
+    where = None
+    sql = None
+
+
+    def parse(self, table, fields, filters, limit, orders, column_delimiter):
+        if filters:
+            self.where = self._parse_filters(filters)
+
+        if orders:
+            self.orders = self._parse_orders(orders)
+
+        if not fields:
+            self.fields = '*'
+        else:
+            self.fields = ','.join(['`%s`' % field for field in fields])
+
+        self.table = table
+        self.limit = limit
+
+        self.sql = super(SQLParserWrap, self).parse(table, fields, filters, limit, orders, column_delimiter)
+
+        return self
+
+
 class JSONParser(QParser):
 
 
